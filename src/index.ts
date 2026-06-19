@@ -1,3 +1,4 @@
+import './utils/libsignal-logs.ts';
 import { createApp } from './app.ts';
 import { env } from './config/env.ts';
 import { runMigrations } from './db/migrations/runner.ts';

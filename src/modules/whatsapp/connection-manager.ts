@@ -1,3 +1,4 @@
+import '../../utils/libsignal-logs.ts';
 import makeWASocket, {
     DisconnectReason,
     fetchLatestBaileysVersion,
@@ -14,6 +15,7 @@ import {
     getSession,
 } from './session-repository.ts';
 import type { ConnectionInfo, LoginStatus, SocketConnectionStatus } from './types.ts';
+import { resolveLoginStatus } from './login-status.ts';
 import {
     TenantAlreadyLoggedInError,
     WhatsAppNotConnectedError,
@@ -88,8 +90,13 @@ class WhatsAppConnectionManager {
         });
     }
 
-    private async resetFailedQrLogin(tenantId: number, conn: TenantConnection): Promise<void> {
+    private async invalidateSession(tenantId: number, conn: TenantConnection): Promise<void> {
         this.clearReconnectTimer(conn);
+        if (conn.socket) {
+            conn.replacingSocket = true;
+            conn.socket.end(undefined);
+            conn.socket = null;
+        }
         conn.loginStatus = 'logged_out';
         conn.connectionStatus = 'disconnected';
         conn.qrCode = null;
@@ -98,18 +105,43 @@ class WhatsAppConnectionManager {
         await clearSessionAuth(tenantId);
     }
 
+    private async resetFailedQrLogin(tenantId: number, conn: TenantConnection): Promise<void> {
+        await this.invalidateSession(tenantId, conn);
+    }
+
     private isFailedQrLogin(status: LoginStatus, connectionStatus: SocketConnectionStatus): boolean {
         return status === 'qr_pending' && connectionStatus === 'disconnected';
     }
 
-    async connect(tenantId: number): Promise<ConnectionInfo> {
+    private isInvalidSessionDisconnect(statusCode: number | undefined): boolean {
+        if (statusCode === undefined) return false;
+        return (
+            statusCode === DisconnectReason.loggedOut ||
+            statusCode === DisconnectReason.badSession ||
+            statusCode === DisconnectReason.forbidden
+        );
+    }
+
+    async connect(tenantId: number, options?: { force?: boolean }): Promise<ConnectionInfo> {
         const conn = this.getOrCreate(tenantId);
 
         if (
+            !options?.force &&
             conn.socket &&
             (conn.connectionStatus === 'connected' || conn.connectionStatus === 'connecting')
         ) {
             return this.getConnectionInfo(tenantId);
+        }
+
+        if (
+            options?.force &&
+            conn.socket &&
+            conn.connectionStatus !== 'connected'
+        ) {
+            conn.replacingSocket = true;
+            conn.socket.end(undefined);
+            conn.socket = null;
+            conn.connectionStatus = 'disconnected';
         }
 
         const inFlight = this.connectPromises.get(tenantId);
@@ -265,6 +297,13 @@ class WhatsAppConnectionManager {
                 }
 
                 if (qr) {
+                    if (wasRegistered) {
+                        clearSyncTimer();
+                        await this.invalidateSession(tenantId, conn);
+                        await markReady();
+                        return;
+                    }
+
                     conn.qrCode = qr;
                     conn.loginStatus = 'qr_pending';
                     conn.connectionStatus = 'connecting';
@@ -302,7 +341,7 @@ class WhatsAppConnectionManager {
                     }
 
                     const statusCode = (lastDisconnect?.error as Boom | undefined)?.output?.statusCode;
-                    const loggedOut = statusCode === DisconnectReason.loggedOut;
+                    const invalidSession = this.isInvalidSessionDisconnect(statusCode);
                     const restartRequired = statusCode === DisconnectReason.restartRequired;
                     const waitingForQr =
                         conn.loginStatus === 'qr_pending' || conn.connectionStatus === 'connecting';
@@ -310,26 +349,17 @@ class WhatsAppConnectionManager {
                     conn.socket = null;
                     conn.connecting = false;
 
-                    if (loggedOut) {
+                    if (invalidSession) {
                         clearSyncTimer();
-                        conn.loginStatus = 'logged_out';
-                        conn.connectionStatus = 'disconnected';
-                        conn.qrCode = null;
-                        await clearSessionAuth(tenantId);
-                        return;
-                    }
-
-                    if (restartRequired) {
+                        await this.invalidateSession(tenantId, conn);
+                    } else if (restartRequired) {
                         conn.connectionStatus = 'connecting';
                         conn.qrCode = null;
                         await this.persistSession(tenantId, conn, { qr_code: null });
                         setImmediate(() => {
                             this.connect(tenantId).catch(() => undefined);
                         });
-                        return;
-                    }
-
-                    if (waitingForQr) {
+                    } else if (waitingForQr) {
                         if (conn.qrCode || conn.loginStatus === 'qr_pending') {
                             clearSyncTimer();
                             await this.resetFailedQrLogin(tenantId, conn);
@@ -341,17 +371,20 @@ class WhatsAppConnectionManager {
                         } else {
                             await this.persistSession(tenantId, conn, { qr_code: null });
                         }
-                        return;
+                    } else {
+                        clearSyncTimer();
+                        conn.loginStatus = wasRegistered ? 'logged_in' : 'logged_out';
+                        conn.connectionStatus = 'disconnected';
+                        conn.qrCode = null;
+                        await this.persistSession(tenantId, conn, { qr_code: null });
+
+                        if (wasRegistered) {
+                            this.scheduleReconnect(tenantId, conn);
+                        }
                     }
 
-                    clearSyncTimer();
-                    conn.loginStatus = wasRegistered ? 'logged_in' : 'logged_out';
-                    conn.connectionStatus = 'disconnected';
-                    conn.qrCode = null;
-                    await this.persistSession(tenantId, conn, { qr_code: null });
-
-                    if (wasRegistered) {
-                        this.scheduleReconnect(tenantId, conn);
+                    if (!readyResolved) {
+                        await markReady();
                     }
                 }
             });
@@ -439,21 +472,18 @@ class WhatsAppConnectionManager {
         }
 
         const info = await this.getConnectionInfo(tenantId);
+        if (info.status === 'logged_out') {
+            throw new WhatsAppNotLoggedInError();
+        }
         if (info.status === 'qr_pending' && info.connectionStatus === 'connecting') {
             throw new WhatsAppQrPendingError();
         }
 
-        const { state } = await useDatabaseAuthState(tenantId);
-        if (!hasAuthenticatedCreds(state.creds)) {
-            throw new WhatsAppNotLoggedInError();
-        }
-
-        if (conn.loginStatus === 'logged_out') {
-            conn.loginStatus = 'logged_in';
-        }
-
         if (!conn.socket || conn.connectionStatus === 'disconnected') {
-            await this.connect(tenantId);
+            const result = await this.connect(tenantId, { force: true });
+            if (result.status === 'logged_out') {
+                throw new WhatsAppNotLoggedInError();
+            }
         }
 
         return this.waitForConnectedSocket(tenantId);
@@ -520,32 +550,32 @@ class WhatsAppConnectionManager {
         return 'disconnected';
     }
 
-    private hasActiveLoginState(conn: TenantConnection, tenantId: number): boolean {
-        if (conn.socket !== null || this.isConnectionInProgress(tenantId, conn)) {
-            return true;
-        }
-
-        return conn.loginStatus === 'qr_pending' && conn.connectionStatus === 'connecting';
+    private isActiveQrLogin(conn: TenantConnection, tenantId: number): boolean {
+        return (
+            conn.loginStatus === 'qr_pending' &&
+            (conn.connectionStatus === 'connecting' || this.isConnectionInProgress(tenantId, conn))
+        );
     }
 
-    private reconcileLoginStatus(
-        status: LoginStatus,
+    private async syncStaleSessionRecord(
+        tenantId: number,
+        conn: TenantConnection,
+        dbSession: Awaited<ReturnType<typeof getSession>>,
         hasCreds: boolean,
-        phoneNumber: string | null,
-    ): LoginStatus {
-        if (status === 'qr_pending') {
-            return 'qr_pending';
-        }
+    ): Promise<void> {
+        if (hasCreds || !dbSession) return;
 
-        if (status === 'logged_out' && (hasCreds || phoneNumber)) {
-            return 'logged_in';
-        }
+        if (this.isActiveQrLogin(conn, tenantId)) return;
 
-        if (status === 'logged_in' && !hasCreds && !phoneNumber) {
-            return 'logged_out';
-        }
+        if (dbSession.status === 'logged_out') return;
 
-        return status;
+        conn.loginStatus = 'logged_out';
+        conn.phoneNumber = null;
+        await updateSessionState(tenantId, {
+            status: 'logged_out',
+            phone_number: null,
+            qr_code: null,
+        });
     }
 
     async verifyConnectionStatus(tenantId: number): Promise<ConnectionInfo> {
@@ -555,57 +585,61 @@ class WhatsAppConnectionManager {
             return this.getConnectionInfo(tenantId);
         }
 
+        const dbSession = await getSession(tenantId);
         const { state } = await useDatabaseAuthState(tenantId);
-        if (!hasAuthenticatedCreds(state.creds)) {
+        const hasCreds = hasAuthenticatedCreds(state.creds);
+
+        const dbSaysLoggedIn =
+            dbSession?.status === 'logged_in' || dbSession?.status === 'qr_pending';
+
+        if (!hasCreds) {
+            if (dbSaysLoggedIn) {
+                await this.invalidateSession(tenantId, conn);
+            }
             return this.getConnectionInfo(tenantId);
         }
 
-        if (conn.loginStatus === 'logged_out') {
-            conn.loginStatus = 'logged_in';
-        }
-
         try {
-            await this.connect(tenantId);
+            return await this.connect(tenantId, { force: true });
         } catch {
-            // Timeout or transient failure — return best-known status.
+            const { state: latestState } = await useDatabaseAuthState(tenantId);
+            if (!hasAuthenticatedCreds(latestState.creds)) {
+                await this.invalidateSession(tenantId, conn);
+            }
+            return this.getConnectionInfo(tenantId);
         }
-
-        return this.getConnectionInfo(tenantId);
     }
 
     async getConnectionInfo(tenantId: number): Promise<ConnectionInfo> {
         const conn = this.getOrCreate(tenantId);
         const dbSession = await getSession(tenantId);
 
-        let status: LoginStatus;
-
-        if (this.hasActiveLoginState(conn, tenantId)) {
-            status = conn.loginStatus;
-        } else if (dbSession) {
-            status = dbSession.status;
-        } else {
-            status = 'logged_out';
-        }
-
-        const phoneNumber = conn.phoneNumber ?? dbSession?.phone_number ?? null;
-        const connectionStatus = this.resolveConnectionStatus(tenantId, conn);
-
         const { state } = await useDatabaseAuthState(tenantId);
         const hasCreds = hasAuthenticatedCreds(state.creds);
 
-        status = this.reconcileLoginStatus(status, hasCreds, phoneNumber);
+        await this.syncStaleSessionRecord(tenantId, conn, dbSession, hasCreds);
+
+        const phoneNumber = conn.phoneNumber ?? dbSession?.phone_number ?? null;
+        const connectionStatus = this.resolveConnectionStatus(tenantId, conn);
+        const activeQrLogin = this.isActiveQrLogin(conn, tenantId);
+        const status = resolveLoginStatus(hasCreds, activeQrLogin);
 
         let resolvedPhoneNumber = phoneNumber;
         if (this.isFailedQrLogin(status, connectionStatus)) {
             await this.resetFailedQrLogin(tenantId, conn);
-            status = 'logged_out';
             resolvedPhoneNumber = null;
+            return {
+                status: 'logged_out',
+                connectionStatus: this.resolveConnectionStatus(tenantId, conn),
+                phoneNumber: null,
+                lastConnectedAt: null,
+            };
         }
 
         return {
             status,
             connectionStatus: this.resolveConnectionStatus(tenantId, conn),
-            phoneNumber: resolvedPhoneNumber,
+            phoneNumber: status === 'logged_in' ? resolvedPhoneNumber : null,
             lastConnectedAt: dbSession?.last_connected_at
                 ? new Date(dbSession.last_connected_at).toISOString()
                 : null,
