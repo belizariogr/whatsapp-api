@@ -1,0 +1,37 @@
+import { Hono } from 'hono';
+import { cors } from 'hono/cors';
+import { logger } from 'hono/logger';
+import healthRoutes from './routes/health.routes.ts';
+import whatsappRoutes from './routes/whatsapp.routes.ts';
+
+export function createApp() {
+  const app = new Hono();
+
+  app.use('*', logger());
+  app.use('*', cors());
+
+  app.route('/health', healthRoutes);
+  app.route('/whatsapp', whatsappRoutes);
+
+  app.notFound((c) =>
+    c.json({ success: false, error: { code: 'NOT_FOUND', message: 'Route not found' } }, 404),
+  );
+
+  app.onError((err, c) => {
+    console.error('[API Error]', err);
+    return c.json(
+      {
+        success: false,
+        error: {
+          code: 'INTERNAL_ERROR',
+          message: err.message ?? 'Internal server error',
+        },
+      },
+      500,
+    );
+  });
+
+  return app;
+}
+
+export default createApp;

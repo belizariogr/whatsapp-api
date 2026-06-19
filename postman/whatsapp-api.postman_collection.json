@@ -1,0 +1,363 @@
+{
+  "info": {
+    "_postman_id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+    "name": "WhatsApp API",
+    "description": "API multi-tenant de WhatsApp (Bun + Hono + Baileys 7).\n\n## Configuração\n\n1. Importe esta collection no Postman.\n2. Edite as variáveis da collection:\n   - `baseUrl` — URL do servidor (padrão: `http://localhost:6000`)\n   - `jwtToken` — JWT válido emitido pelo microserviço de autenticação\n   - `recipientPhone` — número de destino (formato: `5511999999999`)\n\nTodas as rotas `/whatsapp/*` usam Bearer Token automaticamente via variável `jwtToken`.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{jwtToken}}",
+        "type": "string"
+      }
+    ]
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:6000",
+      "type": "string"
+    },
+    {
+      "key": "jwtToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "recipientPhone",
+      "value": "5511999999999",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Health",
+      "item": [
+        {
+          "name": "Health Check",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/health/health",
+              "host": ["{{baseUrl}}"],
+              "path": ["health", "health"]
+            },
+            "description": "Verifica status da API e conexão com o banco de dados."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Conexão",
+      "item": [
+        {
+          "name": "Connect",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/whatsapp/connect",
+              "host": ["{{baseUrl}}"],
+              "path": ["whatsapp", "connect"]
+            },
+            "description": "Inicia conexão WhatsApp. Se não houver sessão salva, retorna QR code em `data.qrCode`."
+          },
+          "response": []
+        },
+        {
+          "name": "Status",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/whatsapp/status",
+              "host": ["{{baseUrl}}"],
+              "path": ["whatsapp", "status"]
+            },
+            "description": "Verifica situação da conexão WhatsApp do tenant."
+          },
+          "response": []
+        },
+        {
+          "name": "Disconnect",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/whatsapp/disconnect",
+              "host": ["{{baseUrl}}"],
+              "path": ["whatsapp", "disconnect"]
+            },
+            "description": "Encerra o socket sem remover credenciais do banco."
+          },
+          "response": []
+        },
+        {
+          "name": "Logout",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/whatsapp/logout",
+              "host": ["{{baseUrl}}"],
+              "path": ["whatsapp", "logout"]
+            },
+            "description": "Logout completo — remove credenciais do banco."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Mensagens",
+      "item": [
+        {
+          "name": "Texto",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"to\": \"{{recipientPhone}}\",\n  \"text\": \"Olá! Mensagem de teste.\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/whatsapp/messages/text",
+              "host": ["{{baseUrl}}"],
+              "path": ["whatsapp", "messages", "text"]
+            },
+            "description": "Envia mensagem de texto simples."
+          },
+          "response": []
+        },
+        {
+          "name": "Link (com preview)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"to\": \"{{recipientPhone}}\",\n  \"text\": \"Veja nosso site: https://example.com\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/whatsapp/messages/link",
+              "host": ["{{baseUrl}}"],
+              "path": ["whatsapp", "messages", "link"]
+            },
+            "description": "Envia texto com link (preview automático)."
+          },
+          "response": []
+        },
+        {
+          "name": "Imagem (URL)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"to\": \"{{recipientPhone}}\",\n  \"imageUrl\": \"https://example.com/photo.jpg\",\n  \"caption\": \"Legenda opcional\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/whatsapp/messages/image",
+              "host": ["{{baseUrl}}"],
+              "path": ["whatsapp", "messages", "image"]
+            },
+            "description": "Envia imagem via URL pública."
+          },
+          "response": []
+        },
+        {
+          "name": "Imagem (base64)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"to\": \"{{recipientPhone}}\",\n  \"imageBase64\": \"<cole-o-base64-aqui>\",\n  \"caption\": \"Legenda opcional\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/whatsapp/messages/image",
+              "host": ["{{baseUrl}}"],
+              "path": ["whatsapp", "messages", "image"]
+            },
+            "description": "Envia imagem via base64 (sem prefixo data URI)."
+          },
+          "response": []
+        },
+        {
+          "name": "Botões (quick reply)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"to\": \"{{recipientPhone}}\",\n  \"text\": \"Escolha uma opção:\",\n  \"footer\": \"Opcional\",\n  \"buttons\": [\n    { \"id\": \"sim\", \"text\": \"Sim\" },\n    { \"id\": \"nao\", \"text\": \"Não\" }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/whatsapp/messages/buttons",
+              "host": ["{{baseUrl}}"],
+              "path": ["whatsapp", "messages", "buttons"]
+            },
+            "description": "Envia mensagem com botões de resposta rápida."
+          },
+          "response": []
+        },
+        {
+          "name": "Botão com link (CTA URL)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"to\": \"{{recipientPhone}}\",\n  \"text\": \"Acesse nosso site\",\n  \"footer\": \"Opcional\",\n  \"buttonText\": \"Abrir site\",\n  \"url\": \"https://example.com\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/whatsapp/messages/link-button",
+              "host": ["{{baseUrl}}"],
+              "path": ["whatsapp", "messages", "link-button"]
+            },
+            "description": "Envia mensagem com botão de link externo."
+          },
+          "response": []
+        },
+        {
+          "name": "Bulk — Texto",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"recipients\": [\"5511111111111\", \"5522222222222\"],\n  \"message\": {\n    \"type\": \"text\",\n    \"text\": \"Mensagem para todos\"\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/whatsapp/messages/bulk",
+              "host": ["{{baseUrl}}"],
+              "path": ["whatsapp", "messages", "bulk"]
+            },
+            "description": "Envio em massa — tipo `text`."
+          },
+          "response": []
+        },
+        {
+          "name": "Bulk — Imagem",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"recipients\": [\"5511111111111\", \"5522222222222\"],\n  \"message\": {\n    \"type\": \"image\",\n    \"imageUrl\": \"https://example.com/photo.jpg\",\n    \"caption\": \"Legenda\"\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/whatsapp/messages/bulk",
+              "host": ["{{baseUrl}}"],
+              "path": ["whatsapp", "messages", "bulk"]
+            },
+            "description": "Envio em massa — tipo `image`. Tipos suportados: `text`, `link`, `image`, `buttons`, `link_button`."
+          },
+          "response": []
+        },
+        {
+          "name": "Última mensagem recebida",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/whatsapp/messages/last-received",
+              "host": ["{{baseUrl}}"],
+              "path": ["whatsapp", "messages", "last-received"]
+            },
+            "description": "Retorna a última mensagem recebida (uso em testes)."
+          },
+          "response": []
+        }
+      ]
+    }
+  ]
+}
