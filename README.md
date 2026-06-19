@@ -1,47 +1,47 @@
 # WhatsApp API (Multi-tenant)
 
-API REST para integração com WhatsApp via [Baileys 7](https://github.com/WhiskeySockets/Baileys), construída com **Bun** e **Hono**. Suporta múltiplos tenants com sessões isoladas no **MariaDB**.
+REST API for WhatsApp integration via [Baileys 7](https://github.com/WhiskeySockets/Baileys), built with **Bun** and **Hono**. Supports multiple tenants with isolated sessions in **MariaDB**.
 
-## Funcionalidades
+## Features
 
-- Conectar / desconectar / verificar status da conexão WhatsApp
-- Enviar mensagens:
-  - Texto
-  - Links (com preview)
-  - Imagens (URL ou base64)
-  - Botões de resposta rápida
-  - Botão com link externo (CTA URL)
-  - Envio em massa para múltiplos contatos
-- Recebimento básico de mensagens (para validação/testes)
-- Autenticação JWT multi-tenant (validação apenas — tokens emitidos externamente)
+- Connect / disconnect / check WhatsApp connection status
+- Send messages:
+  - Text
+  - Links (with preview)
+  - Images (URL or base64)
+  - Quick reply buttons
+  - External link button (CTA URL)
+  - Bulk send to multiple contacts
+- Basic message receiving (for validation/testing)
+- Multi-tenant JWT authentication (validation only — tokens issued externally)
 
 ## Stack
 
-| Tecnologia | Uso |
-|------------|-----|
-| [Bun](https://bun.sh) | Runtime, testes, servidor HTTP |
-| [Hono](https://hono.dev) | Framework HTTP |
-| [@whiskeysockets/baileys](https://www.npmjs.com/package/@whiskeysockets/baileys) 7.0.0-rc13 | Cliente WhatsApp Web |
-| MariaDB + Bun.SQL | Persistência multi-tenant |
-| jsonwebtoken | Validação JWT |
+| Technology | Purpose |
+|------------|---------|
+| [Bun](https://bun.sh) | Runtime, tests, HTTP server |
+| [Hono](https://hono.dev) | HTTP framework |
+| [@whiskeysockets/baileys](https://www.npmjs.com/package/@whiskeysockets/baileys) 7.0.0-rc13 | WhatsApp Web client |
+| MariaDB + Bun.SQL | Multi-tenant persistence |
+| jsonwebtoken | JWT validation |
 
-## Pré-requisitos
+## Prerequisites
 
 - [Bun](https://bun.sh) >= 1.2
 - MariaDB 10.5+
-- Token JWT válido (emitido pelo microserviço de autenticação)
+- Valid JWT token (issued by the authentication microservice)
 
-## Instalação
+## Installation
 
 ```bash
 git clone <repo-url>
 cd whtasapp-api
 bun install
 cp .env.example .env
-# Edite .env com suas credenciais
+# Edit .env with your credentials
 ```
 
-### Configuração (.env)
+### Configuration (.env)
 
 ```env
 PORT=3000
@@ -50,63 +50,63 @@ DATABASE_PORT=3306
 DATABASE_USERNAME=user
 DATABASE_PASSWORD=password
 DATABASE_NAME=whatsapp_api
-JWT_SECRET_KEY=sua-chave-secreta
-JWT_SECRET_KEY_PUBLIC=sua-chave-publica
+JWT_SECRET_KEY=your-secret-key
+JWT_SECRET_KEY_PUBLIC=your-public-key
 
-# Testes de ação
+# Action tests
 TEST_TENANT_ID=1
 TEST_JWT_TOKEN=eyJ...
 TEST_RECIPIENT_PHONE=5511999999999
 ```
 
-### Banco de dados
+### Database
 
-Crie o banco e execute as migrations:
+Create the database and run migrations:
 
 ```bash
-# No MariaDB
+# In MariaDB
 CREATE DATABASE whatsapp_api CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
-# Rodar migrations
+# Run migrations
 bun run migrate
 ```
 
-## Executando
+## Running
 
 ```bash
-# Desenvolvimento (hot reload)
+# Development (hot reload)
 bun run dev
 
-# Produção
+# Production
 bun run start
 ```
 
-Servidor padrão: `http://0.0.0.0:3000`
+Default server: `http://0.0.0.0:3000`
 
-## Autenticação
+## Authentication
 
-Todas as rotas `/whatsapp/*` exigem:
+All `/whatsapp/*` routes require:
 
 ```
 Authorization: Bearer <JWT>
 ```
 
-O campo `id` do payload JWT identifica o **tenant**. A validação usa `src/core/services/token.ts` — mesma chave secreta do microserviço emissor.
+The JWT payload `id` field identifies the **tenant**. Validation uses `src/core/services/token.ts` — same secret key as the issuing microservice.
 
 ## API Reference
 
-### Conexão
+### Connection
 
 #### `POST /whatsapp/connect`
 
-Inicia conexão WhatsApp. Se não houver sessão salva, retorna QR code em `data.qrCode`.
+Starts WhatsApp connection. If no saved session exists, returns QR code in `data.qrCode`.
 
 ```bash
 curl -X POST http://localhost:3000/whatsapp/connect \
   -H "Authorization: Bearer $TOKEN"
 ```
 
-Resposta:
+Response:
 ```json
 {
   "success": true,
@@ -122,84 +122,84 @@ Resposta:
 
 #### `GET /whatsapp/status`
 
-Verifica situação da conexão.
+Checks connection status.
 
 #### `POST /whatsapp/disconnect`
 
-Encerra o socket sem remover credenciais.
+Closes the socket without removing credentials.
 
 #### `POST /whatsapp/logout`
 
-Logout completo — remove credenciais do banco.
+Full logout — removes credentials from the database.
 
-### Mensagens
+### Messages
 
-#### Texto — `POST /whatsapp/messages/text`
+#### Text — `POST /whatsapp/messages/text`
 
 ```json
-{ "to": "5511999999999", "text": "Olá!" }
+{ "to": "5511999999999", "text": "Hello!" }
 ```
 
 #### Link — `POST /whatsapp/messages/link`
 
 ```json
-{ "to": "5511999999999", "text": "Veja https://example.com" }
+{ "to": "5511999999999", "text": "See https://example.com" }
 ```
 
-#### Imagem — `POST /whatsapp/messages/image`
+#### Image — `POST /whatsapp/messages/image`
 
 ```json
 {
   "to": "5511999999999",
   "imageUrl": "https://example.com/photo.jpg",
-  "caption": "Legenda opcional"
+  "caption": "Optional caption"
 }
 ```
 
-Ou com base64: `"imageBase64": "<base64>"`
+Or with base64: `"imageBase64": "<base64>"`
 
-#### Botões — `POST /whatsapp/messages/buttons`
+#### Buttons — `POST /whatsapp/messages/buttons`
 
 ```json
 {
   "to": "5511999999999",
-  "text": "Escolha:",
-  "footer": "Opcional",
+  "text": "Choose:",
+  "footer": "Optional",
   "buttons": [
-    { "id": "sim", "text": "Sim" },
-    { "id": "nao", "text": "Não" }
+    { "id": "yes", "text": "Yes" },
+    { "id": "no", "text": "No" }
   ]
 }
 ```
 
-#### Botão com link — `POST /whatsapp/messages/link-button`
+#### Link button — `POST /whatsapp/messages/link-button`
 
 ```json
 {
   "to": "5511999999999",
-  "text": "Acesse nosso site",
-  "buttonText": "Abrir site",
+  "text": "Visit our website",
+  "buttonText": "Open site",
   "url": "https://example.com"
 }
 ```
 
-#### Envio em massa — `POST /whatsapp/messages/bulk`
+#### Bulk send — `POST /whatsapp/messages/bulk`
 
 ```json
 {
   "recipients": ["5511111111111", "5522222222222"],
   "message": {
     "type": "text",
-    "text": "Mensagem para todos"
+    "text": "Message for everyone"
   }
 }
 ```
 
-Tipos suportados em `message.type`: `text`, `link`, `image`, `buttons`, `link_button`.
+Supported types in `message.type`: `text`, `link`, `image`, `buttons`, `link_button`.
 
-#### Última mensagem recebida — `GET /whatsapp/messages/last-received`
+#### Last received message — `GET /whatsapp/messages/last-received`
 
-Retorna a última mensagem recebida (uso em testes).
+Returns the last received message (for testing).
 
 ### Health
 
@@ -216,29 +216,29 @@ Retorna a última mensagem recebida (uso em testes).
 }
 ```
 
-## Testes
+## Tests
 
 ```bash
-# Todos os testes (unit + integration; action skipped se .env incompleto)
+# All tests (unit + integration; action skipped if .env is incomplete)
 bun test
 
-# Por categoria
+# By category
 bun test tests/unit
 bun test tests/integration
-bun test tests/action   # Requer servidor rodando + .env configurado
+bun test tests/action   # Requires running server + configured .env
 ```
 
-### Testes de ação
+### Action tests
 
-1. Configure `TEST_TENANT_ID`, `TEST_JWT_TOKEN` e `TEST_RECIPIENT_PHONE` no `.env`
-2. Inicie o servidor: `bun run dev`
-3. Conecte o WhatsApp: `POST /whatsapp/connect` e escaneie o QR
-4. Execute: `bun test tests/action`
+1. Configure `TEST_TENANT_ID`, `TEST_JWT_TOKEN`, and `TEST_RECIPIENT_PHONE` in `.env`
+2. Start the server: `bun run dev`
+3. Connect WhatsApp: `POST /whatsapp/connect` and scan the QR code
+4. Run: `bun test tests/action`
 
-## Arquitetura
+## Architecture
 
 ```
-Cliente HTTP
+HTTP Client
     │
     ▼
 Hono (app.ts)
@@ -248,24 +248,24 @@ Hono (app.ts)
                 │
                 ▼
         modules/whatsapp/
-            connection-manager.ts  → Baileys socket por tenant
-            message-sender.ts      → Envio de mensagens
-            auth-state.ts          → Credenciais no MariaDB
-            session-repository.ts  → Status/sessões
+            connection-manager.ts  → Baileys socket per tenant
+            message-sender.ts      → Message sending
+            auth-state.ts          → Credentials in MariaDB
+            session-repository.ts  → Status/sessions
 ```
 
-Cada tenant possui:
-- Registro em `tenants`
-- Sessão em `whatsapp_sessions`
-- Credenciais Baileys em `whatsapp_auth_creds` + `whatsapp_auth_keys`
-- Mensagens recebidas em `received_messages`
+Each tenant has:
+- A record in `tenants`
+- A session in `whatsapp_sessions`
+- Baileys credentials in `whatsapp_auth_creds` + `whatsapp_auth_keys`
+- Received messages in `received_messages`
 
-## Estrutura do projeto
+## Project structure
 
-Ver [AGENTS.md](./AGENTS.md) para guia completo de desenvolvimento e regras para agentes de IA.
+See [AGENTS.md](./AGENTS.md) for the full development guide and AI agent rules.
 
-Ver [TODO.md](./TODO.md) para acompanhamento do desenvolvimento.
+See [TODO.md](./TODO.md) for development tracking.
 
-## Licença
+## License
 
-MIT — ver [LICENSE](./LICENSE)
+MIT — see [LICENSE](./LICENSE)

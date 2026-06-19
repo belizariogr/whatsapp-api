@@ -1,64 +1,64 @@
-# AGENTS.md — Guia para Agentes de IA
+# AGENTS.md — Guide for AI Agents
 
-Este documento orienta agentes de IA (Cursor, Copilot, etc.) ao trabalhar neste repositório.
+This document guides AI agents (Cursor, Copilot, etc.) when working in this repository.
 
-## Visão geral
+## Overview
 
-API multi-tenant de WhatsApp construída com **Bun**, **Hono** e **Baileys 7** (`@whiskeysockets/baileys@7.0.0-rc13`). Cada tenant é identificado pelo campo `id` do JWT (validado em `src/core/services/token.ts`). **Esta API não emite tokens** — apenas valida tokens emitidos por outro microserviço.
+Multi-tenant WhatsApp API built with **Bun**, **Hono**, and **Baileys 7** (`@whiskeysockets/baileys@7.0.0-rc13`). Each tenant is identified by the JWT `id` field (validated in `src/core/services/token.ts`). **This API does not issue tokens** — it only validates tokens issued by another microservice.
 
-## Regras obrigatórias
+## Mandatory rules
 
-### Código e arquitetura
+### Code and architecture
 
-1. **Boas práticas sempre** — código legível, tipado, com responsabilidades claras e fácil manutenção.
-2. **Separação de módulos** — cada domínio em pasta própria (`src/modules/whatsapp/`, `src/db/`, etc.).
-3. **Rotas em arquivos separados** — uma rota por arquivo em `src/routes/` (ex.: `whatsapp.routes.ts`, `health.routes.ts`).
-4. **Utilitários agrupados por tipo** — funções helper em `src/utils/` por categoria:
-   - `utils/strings.ts` — manipulação de strings
-   - `utils/phone.ts` — normalização de telefones/JIDs
-   - `utils/response.ts` — respostas HTTP padronizadas
-   - Novos helpers: criar arquivo por tipo (`utils/dates.ts`, `utils/validation.ts`, etc.), **não** um arquivo genérico `helpers.ts`.
-5. **Multi-tenant em tudo** — toda query e lógica de negócio deve filtrar/isolar por `tenantId`.
-6. **Não criar tokens JWT** — usar apenas `Token.verify()` do serviço existente.
-7. **Escopo mínimo** — alterar apenas o necessário; não refatorar código não relacionado à tarefa.
+1. **Always follow best practices** — readable, typed code with clear responsibilities and easy maintenance.
+2. **Module separation** — each domain in its own folder (`src/modules/whatsapp/`, `src/db/`, etc.).
+3. **Routes in separate files** — one route file per domain in `src/routes/` (e.g. `whatsapp.routes.ts`, `health.routes.ts`).
+4. **Utilities grouped by type** — helper functions in `src/utils/` by category:
+   - `utils/strings.ts` — string manipulation
+   - `utils/phone.ts` — phone/JID normalization
+   - `utils/response.ts` — standardized HTTP responses
+   - New helpers: create a file per type (`utils/dates.ts`, `utils/validation.ts`, etc.), **not** a generic `helpers.ts`.
+5. **Multi-tenant everywhere** — every query and business logic must filter/isolate by `tenantId`.
+6. **Do not create JWT tokens** — use only `Token.verify()` from the existing service.
+7. **Minimal scope** — change only what is necessary; do not refactor unrelated code.
 
-### Banco de dados
+### Database
 
-- Usar **Bun.SQL** nativo (`import { SQL } from 'bun'`) via `src/db/client.ts`.
-- Novas tabelas/colunas: adicionar migration numerada em `src/db/migrations/`.
-- Executar migrations: `bun run migrate`.
+- Use native **Bun.SQL** (`import { SQL } from 'bun'`) via `src/db/client.ts`.
+- New tables/columns: add a numbered migration in `src/db/migrations/`.
+- Run migrations: `bun run migrate`.
 
 ### WhatsApp / Baileys
 
-- Versão: `@whiskeysockets/baileys@7.0.0-rc13` (Baileys 7).
-- Sessões persistidas no MariaDB (`auth-state.ts`), não em arquivos soltos em produção.
-- Botões interativos: `interactiveButtons` com `quick_reply` e `cta_url`.
-- Recebimento de mensagens: implementação mínima para testes (`connection-manager.ts` → `received_messages`).
+- Version: `@whiskeysockets/baileys@7.0.0-rc13` (Baileys 7).
+- Sessions persisted in MariaDB (`auth-state.ts`), not loose files in production.
+- Interactive buttons: `interactiveButtons` with `quick_reply` and `cta_url`.
+- Message receiving: minimal implementation for tests (`connection-manager.ts` → `received_messages`).
 
-### Testes
+### Tests
 
 - Framework: **Bun test** (`bun test`).
-- Após cada implementação, rodar `bun test` e corrigir falhas.
-- Estrutura:
-  - `tests/unit/` — funções puras e módulos isolados (mocks)
-  - `tests/integration/` — rotas HTTP com app Hono
-  - `tests/action/` — testes reais (requer `.env` com `TEST_TENANT_ID`, `TEST_JWT_TOKEN`, `TEST_RECIPIENT_PHONE`)
-- Novos módulos devem ter testes correspondentes.
+- After each implementation, run `bun test` and fix failures.
+- Structure:
+  - `tests/unit/` — pure functions and isolated modules (mocks)
+  - `tests/integration/` — HTTP routes with Hono app
+  - `tests/action/` — real tests (requires `.env` with `TEST_TENANT_ID`, `TEST_JWT_TOKEN`, `TEST_RECIPIENT_PHONE`)
+- New modules must have corresponding tests.
 
-## Estrutura de pastas
+## Folder structure
 
 ```
 src/
-├── index.ts                 # Bootstrap (migrations + servidor)
-├── app.ts                   # App Hono (middlewares + rotas)
-├── config/env.ts            # Variáveis de ambiente
-├── core/services/token.ts   # Validação JWT (não alterar contrato)
+├── index.ts                 # Bootstrap (migrations + server)
+├── app.ts                   # Hono app (middlewares + routes)
+├── config/env.ts            # Environment variables
+├── core/services/token.ts   # JWT validation (do not change contract)
 ├── db/
 │   ├── client.ts
 │   └── migrations/
 ├── middleware/auth.ts       # JWT → tenantId
 ├── modules/whatsapp/
-│   ├── auth-state.ts        # Auth Baileys no MariaDB
+│   ├── auth-state.ts        # Baileys auth in MariaDB
 │   ├── connection-manager.ts
 │   ├── message-sender.ts
 │   ├── session-repository.ts
@@ -77,52 +77,52 @@ tests/
 └── helpers/
 ```
 
-## Endpoints principais
+## Main endpoints
 
-| Método | Rota | Descrição |
-|--------|------|-----------|
-| POST | `/whatsapp/connect` | Inicia conexão (retorna QR se necessário) |
-| POST | `/whatsapp/disconnect` | Encerra socket sem apagar sessão |
-| POST | `/whatsapp/logout` | Logout completo (apaga credenciais) |
-| GET | `/whatsapp/status` | Status da conexão |
-| POST | `/whatsapp/messages/text` | Texto simples |
-| POST | `/whatsapp/messages/link` | Texto com link (preview) |
-| POST | `/whatsapp/messages/image` | Imagem (URL ou base64) |
-| POST | `/whatsapp/messages/buttons` | Botões de resposta rápida |
-| POST | `/whatsapp/messages/link-button` | Botão com link externo |
-| POST | `/whatsapp/messages/bulk` | Envio para múltiplos números |
-| GET | `/whatsapp/messages/last-received` | Última mensagem recebida (testes) |
+| Method | Route | Description |
+|--------|-------|-------------|
+| POST | `/whatsapp/connect` | Start connection (returns QR if needed) |
+| POST | `/whatsapp/disconnect` | Close socket without deleting session |
+| POST | `/whatsapp/logout` | Full logout (deletes credentials) |
+| GET | `/whatsapp/status` | Connection status |
+| POST | `/whatsapp/messages/text` | Plain text |
+| POST | `/whatsapp/messages/link` | Text with link (preview) |
+| POST | `/whatsapp/messages/image` | Image (URL or base64) |
+| POST | `/whatsapp/messages/buttons` | Quick reply buttons |
+| POST | `/whatsapp/messages/link-button` | External link button |
+| POST | `/whatsapp/messages/bulk` | Send to multiple numbers |
+| GET | `/whatsapp/messages/last-received` | Last received message (tests) |
 | GET | `/health/health` | Health check |
 
-Todas as rotas `/whatsapp/*` exigem header `Authorization: Bearer <JWT>`.
+All `/whatsapp/*` routes require the `Authorization: Bearer <JWT>` header.
 
-## Comandos úteis
+## Useful commands
 
 ```bash
-bun install          # Instalar dependências
-bun run dev          # Desenvolvimento com watch
-bun run start        # Produção
-bun run migrate      # Rodar migrations
-bun test             # Todos os testes
-bun test tests/unit  # Apenas unitários
+bun install          # Install dependencies
+bun run dev          # Development with watch
+bun run start        # Production
+bun run migrate      # Run migrations
+bun test             # All tests
+bun test tests/unit  # Unit tests only
 ```
 
-## Convenções de resposta API
+## API response conventions
 
-Sucesso:
+Success:
 ```json
 { "success": true, "data": { ... } }
 ```
 
-Erro:
+Error:
 ```json
 { "success": false, "error": { "code": "CODE", "message": "..." } }
 ```
 
-## O que NÃO fazer
+## What NOT to do
 
-- Não commitar `.env` ou credenciais.
-- Não usar `useMultiFileAuthState` em produção (usar `auth-state.ts` com MariaDB).
-- Não adicionar endpoint de criação/refresh de JWT.
-- Não misturar lógica de negócio dentro de handlers de rota — delegar aos módulos.
-- Não pular testes após implementações.
+- Do not commit `.env` or credentials.
+- Do not use `useMultiFileAuthState` in production (use `auth-state.ts` with MariaDB).
+- Do not add JWT creation/refresh endpoints.
+- Do not mix business logic inside route handlers — delegate to modules.
+- Do not skip tests after implementations.
