@@ -9,15 +9,17 @@ const mockSocket = {
     sendMessage: mockSendMessage,
 } as unknown as WASocket;
 
-mock.module('../../../src/modules/whatsapp/connection-manager', () => ({
+mock.module('../../../src/modules/connection-manager.ts', () => ({
     whatsappManager: {
         ensureConnected: () => Promise.resolve(mockSocket),
     },
 }));
 
-const { sendTextMessage, sendButtonsMessage, sendBulkMessage } = await import(
-    '../../../src/modules/message-sender.ts'
-);
+const { sendTextMessage, sendButtonsMessage, sendBulkMessage, sendImageMessage } =
+    await import('../../../src/modules/message-sender.ts');
+
+const TEST_IMAGE_BASE64 =
+    'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==';
 
 describe('modules/whatsapp/message-sender', () => {
     beforeEach(() => {
@@ -49,5 +51,34 @@ describe('modules/whatsapp/message-sender', () => {
         });
         expect(results).toHaveLength(2);
         expect(results.every((r) => r.success)).toBe(true);
+    });
+
+    test('sendImageMessage with imageUrl', async () => {
+        const result = await sendImageMessage(1, {
+            to: '5511999999999',
+            imageUrl: 'https://example.com/photo.jpg',
+            caption: 'Test caption',
+        });
+        expect(result.success).toBe(true);
+        expect(result.jid).toBe('5511999999999@s.whatsapp.net');
+        expect(mockSendMessage).toHaveBeenCalledTimes(1);
+        const call = mockSendMessage.mock.calls[0];
+        expect(call?.[1]).toMatchObject({
+            image: { url: 'https://example.com/photo.jpg' },
+            caption: 'Test caption',
+        });
+    });
+
+    test('sendImageMessage with imageBase64', async () => {
+        const result = await sendImageMessage(1, {
+            to: '5511999999999',
+            imageBase64: TEST_IMAGE_BASE64,
+        });
+        expect(result.success).toBe(true);
+        expect(mockSendMessage).toHaveBeenCalledTimes(1);
+        const call = mockSendMessage.mock.calls[0];
+        expect(call?.[1]).toMatchObject({
+            image: Buffer.from(TEST_IMAGE_BASE64, 'base64'),
+        });
     });
 });

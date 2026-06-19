@@ -70,4 +70,16 @@ describe('integration/whatsapp validation', () => {
         });
         expect(res.status).toBe(400);
     });
+
+    test('POST /messages/image validates payload', async () => {
+        const res = await app.request('/messages/image', {
+            method: 'POST',
+            headers: {
+                Authorization: `Bearer ${token}`,
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ to: 'invalid' }),
+        });
+        expect(res.status).toBe(400);
+    });
 });
