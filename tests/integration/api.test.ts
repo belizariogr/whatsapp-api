@@ -2,18 +2,6 @@ import { describe, expect, test } from 'bun:test';
 import { createApp } from '../../src/app.ts';
 import { createTestToken } from '../helpers/jwt';
 
-describe('integration/health', () => {
-  const app = createApp();
-
-  test('GET /health returns response', async () => {
-    const res = await app.request('/health/health');
-    const body = await res.json();
-    expect(body.success).toBe(true);
-    expect(body.data).toHaveProperty('status');
-    expect(body.data).toHaveProperty('database');
-  });
-});
-
 describe('integration/whatsapp auth', () => {
   const app = createApp();
 

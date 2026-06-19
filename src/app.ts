@@ -2,8 +2,7 @@ import { Hono } from 'hono';
 import { cors } from 'hono/cors';
 import { logger } from 'hono/logger';
 import { isWhatsAppApiError } from './modules/whatsapp/types.ts';
-import healthRoutes from './routes/health.routes.ts';
-import whatsappRoutes from './routes/whatsapp.routes.ts';
+import whatsappRoutes from './routes/whatsapp/index.ts';
 
 export function createApp() {
   const app = new Hono();
@@ -11,7 +10,6 @@ export function createApp() {
   app.use('*', logger());
   app.use('*', cors());
 
-  app.route('/health', healthRoutes);
   app.route('/whatsapp', whatsappRoutes);
 
   app.notFound((c) =>
