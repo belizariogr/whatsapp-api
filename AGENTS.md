@@ -38,12 +38,13 @@ Multi-tenant WhatsApp API built with **Bun**, **Hono**, and **Baileys 7** (`@whi
 ### Tests
 
 - Framework: **Bun test** (`bun test`).
-- After each implementation, run `bun test` and fix failures.
+- After each implementation, run **only unit tests** (`bun test tests/unit`) and fix failures.
+- **Do not run integration or action tests during development** — they hang or depend on external services (MariaDB, running server, WhatsApp). Run them **manually** when needed.
 - Structure:
-  - `tests/unit/` — pure functions and isolated modules (mocks)
-  - `tests/integration/` — HTTP routes with Hono app
-  - `tests/action/` — real tests (requires `.env` with `TEST_TENANT_ID`, `TEST_JWT_TOKEN`, `TEST_RECIPIENT_PHONE`)
-- New modules must have corresponding tests.
+  - `tests/unit/` — pure functions and isolated modules (mocks). **Run automatically after changes.**
+  - `tests/integration/` — HTTP routes with Hono app. **Manual only** (`bun test tests/integration`).
+  - `tests/action/` — real tests (requires `.env` with `TEST_TENANT_ID`, `TEST_JWT_TOKEN`, `TEST_RECIPIENT_PHONE`). **Manual only** (`bun test tests/action`).
+- New modules must have corresponding **unit** tests.
 
 ## Folder structure
 
@@ -103,8 +104,10 @@ bun install          # Install dependencies
 bun run dev          # Development with watch
 bun run start        # Production
 bun run migrate      # Run migrations
-bun test             # All tests
-bun test tests/unit  # Unit tests only
+bun test tests/unit          # Unit tests (run after changes)
+bun test tests/integration   # Integration tests (manual only)
+bun test tests/action        # Action tests (manual only)
+bun test                     # All tests (manual only — do not use during development)
 ```
 
 ## API response conventions
@@ -125,4 +128,5 @@ Error:
 - Do not use `useMultiFileAuthState` in production (use `auth-state.ts` with MariaDB).
 - Do not add JWT creation/refresh endpoints.
 - Do not mix business logic inside route handlers — delegate to modules.
-- Do not skip tests after implementations.
+- Do not skip unit tests after implementations.
+- Do not run `bun test`, `bun test tests/integration`, or `bun test tests/action` during development — they hang or require external dependencies.
