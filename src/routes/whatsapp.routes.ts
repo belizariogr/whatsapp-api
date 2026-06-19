@@ -4,6 +4,7 @@ import { authMiddleware } from '../middleware/auth.ts';
 import { jsonError, jsonSuccess } from '../utils/response.ts';
 import { qrStringToPngBase64, qrStringToPngBuffer } from '../utils/qrcode.ts';
 import { whatsappManager } from '../modules/whatsapp/connection-manager.ts';
+import { isWhatsAppApiError } from '../modules/whatsapp/types.ts';
 import {
   sendBulkMessage,
   sendButtonsMessage,
@@ -24,36 +25,36 @@ function getTenantId(c: { get: (key: 'tenantId') => number }): number {
   return c.get('tenantId');
 }
 
-app.post('/connect', async (c) => {
+app.post('/login', async (c) => {
   const tenantId = getTenantId(c);
+  const type = (c.req.query('type') ?? 'img').toLowerCase();
+
+  if (type !== 'img' && type !== 'json') {
+    return jsonError(c, 'VALIDATION_ERROR', 'Invalid type. Use img or json.', 400);
+  }
 
   try {
-    const info = await whatsappManager.connect(tenantId);
+    const { qrCode } = await whatsappManager.login(tenantId);
 
-    if (info.status === 'qr_pending' && info.qrCode) {
-      const png = await qrStringToPngBuffer(info.qrCode);
-      return new Response(png, {
-        status: 200,
-        headers: {
-          'Content-Type': 'image/png',
-          'Cache-Control': 'no-store',
-          'X-Connection-Status': info.status,
-        },
-      });
+    if (type === 'json') {
+      return jsonSuccess(c, { qrCode: await qrStringToPngBase64(qrCode) });
     }
 
-    return jsonSuccess(c, info);
+    const png = await qrStringToPngBuffer(qrCode);
+    return new Response(png, {
+      status: 200,
+      headers: {
+        'Content-Type': 'image/png',
+        'Cache-Control': 'no-store',
+      },
+    });
   } catch (error) {
-    const message =
-      error instanceof Error ? error.message : 'Failed to start WhatsApp connection';
-    return jsonError(c, 'CONNECTION_ERROR', message, 503);
+    if (isWhatsAppApiError(error)) {
+      throw error;
+    }
+    const message = error instanceof Error ? error.message : 'Failed to start WhatsApp login';
+    return jsonError(c, 'LOGIN_ERROR', message, 503);
   }
-});
-
-app.post('/disconnect', async (c) => {
-  const tenantId = getTenantId(c);
-  const info = await whatsappManager.disconnect(tenantId);
-  return jsonSuccess(c, info);
 });
 
 app.post('/logout', async (c) => {

@@ -11,12 +11,8 @@ import type {
   SendTextPayload,
 } from './types.ts';
 
-function ensureConnected(tenantId: number): WASocket {
-  const socket = whatsappManager.getSocket(tenantId);
-  if (!socket) {
-    throw new Error('WhatsApp not connected. Call POST /whatsapp/connect first.');
-  }
-  return socket;
+async function ensureConnected(tenantId: number): Promise<WASocket> {
+  return whatsappManager.ensureConnected(tenantId);
 }
 
 function buildQuickReplyButtons(buttons: SendButtonsPayload['buttons']) {
@@ -33,7 +29,7 @@ export async function sendTextMessage(
   tenantId: number,
   payload: SendTextPayload,
 ): Promise<SendResult> {
-  const socket = ensureConnected(tenantId);
+  const socket = await ensureConnected(tenantId);
   const jid = toWhatsAppJid(payload.to);
   const result = await socket.sendMessage(jid, { text: payload.text });
   return {
@@ -48,7 +44,7 @@ export async function sendLinkMessage(
   tenantId: number,
   payload: SendLinkPayload,
 ): Promise<SendResult> {
-  const socket = ensureConnected(tenantId);
+  const socket = await ensureConnected(tenantId);
   const jid = toWhatsAppJid(payload.to);
   const result = await socket.sendMessage(jid, {
     text: payload.text,
@@ -65,7 +61,7 @@ export async function sendImageMessage(
   tenantId: number,
   payload: SendImagePayload,
 ): Promise<SendResult> {
-  const socket = ensureConnected(tenantId);
+  const socket = await ensureConnected(tenantId);
   const jid = toWhatsAppJid(payload.to);
 
   let imageContent: AnyMessageContent;
@@ -97,7 +93,7 @@ export async function sendButtonsMessage(
   tenantId: number,
   payload: SendButtonsPayload,
 ): Promise<SendResult> {
-  const socket = ensureConnected(tenantId);
+  const socket = await ensureConnected(tenantId);
   const jid = toWhatsAppJid(payload.to);
 
   const result = await socket.sendMessage(jid, {
@@ -118,7 +114,7 @@ export async function sendLinkButtonMessage(
   tenantId: number,
   payload: SendLinkButtonPayload,
 ): Promise<SendResult> {
-  const socket = ensureConnected(tenantId);
+  const socket = await ensureConnected(tenantId);
   const jid = toWhatsAppJid(payload.to);
 
   const result = await socket.sendMessage(jid, {

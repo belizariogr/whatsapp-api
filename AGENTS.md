@@ -82,8 +82,7 @@ tests/
 
 | Method | Route | Description |
 |--------|-------|-------------|
-| POST | `/whatsapp/connect` | Start connection (returns QR if needed) |
-| POST | `/whatsapp/disconnect` | Close socket without deleting session |
+| POST | `/whatsapp/login` | Start login (`?type=img` PNG default, `?type=json` base64 in JSON) |
 | POST | `/whatsapp/logout` | Full logout (deletes credentials) |
 | GET | `/whatsapp/status` | Connection status |
 | POST | `/whatsapp/messages/text` | Plain text |

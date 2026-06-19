@@ -34,7 +34,7 @@ describe('action/whatsapp', () => {
 
       const body = await res.json();
       if (body.error?.message?.includes('not connected')) {
-        console.warn('WhatsApp não conectado — conecte via POST /whatsapp/connect');
+        console.warn('WhatsApp não logado — faça login via POST /whatsapp/login');
         return;
       }
 

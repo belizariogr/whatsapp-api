@@ -13,6 +13,43 @@ export interface ConnectionInfo {
   lastConnectedAt: string | null;
 }
 
+export class WhatsAppApiError extends Error {
+  readonly code: string;
+  readonly statusCode: number;
+
+  constructor(code: string, message: string, statusCode: number) {
+    super(message);
+    this.name = 'WhatsAppApiError';
+    this.code = code;
+    this.statusCode = statusCode;
+  }
+}
+
+export class WhatsAppNotLoggedInError extends WhatsAppApiError {
+  constructor(message = 'WhatsApp not logged in. Call POST /whatsapp/login first.') {
+    super('NOT_LOGGED_IN', message, 401);
+    this.name = 'WhatsAppNotLoggedInError';
+  }
+}
+
+export class WhatsAppNotConnectedError extends WhatsAppApiError {
+  constructor(message: string) {
+    super('NOT_CONNECTED', message, 503);
+    this.name = 'WhatsAppNotConnectedError';
+  }
+}
+
+export class TenantAlreadyLoggedInError extends WhatsAppApiError {
+  constructor() {
+    super('ALREADY_LOGGED_IN', 'Tenant is already logged in to WhatsApp.', 409);
+    this.name = 'TenantAlreadyLoggedInError';
+  }
+}
+
+export function isWhatsAppApiError(error: unknown): error is WhatsAppApiError {
+  return error instanceof WhatsAppApiError;
+}
+
 export interface SendTextPayload {
   to: string;
   text: string;

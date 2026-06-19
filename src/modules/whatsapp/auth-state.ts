@@ -7,6 +7,10 @@ import {
 } from '@whiskeysockets/baileys';
 import { getDb } from '../../db/client.ts';
 
+export function hasAuthenticatedCreds(creds: AuthenticationCreds): boolean {
+  return Boolean(creds.me?.id || creds.registered);
+}
+
 function fixKeyName(name: string): string {
   return name.replace(/\//g, '__').replace(/:/g, '-');
 }

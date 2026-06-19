@@ -11,7 +11,7 @@ const mockSocket = {
 
 mock.module('../../../src/modules/whatsapp/connection-manager', () => ({
   whatsappManager: {
-    getSocket: () => mockSocket,
+    ensureConnected: () => Promise.resolve(mockSocket),
   },
 }));
 

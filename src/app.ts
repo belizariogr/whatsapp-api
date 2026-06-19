@@ -1,6 +1,7 @@
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
 import { logger } from 'hono/logger';
+import { isWhatsAppApiError } from './modules/whatsapp/types.ts';
 import healthRoutes from './routes/health.routes.ts';
 import whatsappRoutes from './routes/whatsapp.routes.ts';
 
@@ -18,6 +19,19 @@ export function createApp() {
   );
 
   app.onError((err, c) => {
+    if (isWhatsAppApiError(err)) {
+      return c.json(
+        {
+          success: false,
+          error: {
+            code: err.code,
+            message: err.message,
+          },
+        },
+        err.statusCode as 401 | 409 | 503,
+      );
+    }
+
     console.error('[API Error]', err);
     return c.json(
       {
