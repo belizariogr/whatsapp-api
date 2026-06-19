@@ -1,10 +1,22 @@
 import { env } from "../../src/config/env.ts";
-import type { ConnectionInfo, LoginStatus } from "../../src/modules/types.ts";
+import type { ConnectionInfo, SendResult } from "../../src/modules/types.ts";
+import type { ApiError, ApiSuccess } from "../../src/utils/response.ts";
 
 const apiHost = process.env.API_HOST ?? "127.0.0.1";
 
 export const actionApiBaseUrl = `http://${apiHost}:${env.port}`;
 export const ACTION_FETCH_TIMEOUT_MS = 2_000;
+
+export type ActionApiResponse<T> = ApiSuccess<T> | ApiError;
+
+export interface ActionRequestResult<T> {
+    status: number;
+    body: ActionApiResponse<T>;
+}
+
+export interface SendBulkResponse {
+    results: SendResult[];
+}
 
 export interface ActionGate {
     ready: boolean;
@@ -32,6 +44,29 @@ export function actionFetch(
     });
 }
 
+export async function parseActionJson<T>(
+    response: Response,
+): Promise<ActionApiResponse<T>> {
+    return response.json() as Promise<ActionApiResponse<T>>;
+}
+
+export async function actionRequest<T>(
+    path: string,
+    init: RequestInit = {},
+): Promise<ActionRequestResult<T>> {
+    const response = await actionFetch(path, init);
+    const body = await parseActionJson<T>(response);
+    return { status: response.status, body };
+}
+
+export function getActionData<T>(body: ActionApiResponse<T>): T {
+    if (!body.success) {
+        throw new Error(`${body.error.code}: ${body.error.message}`);
+    }
+
+    return body.data;
+}
+
 export async function fetchConnectionInfo(
     token: string = env.testJwtToken,
 ): Promise<Pick<ConnectionInfo, "status" | "connectionStatus"> | null> {
@@ -42,11 +77,11 @@ export async function fetchConnectionInfo(
 
         if (!res.ok) return null;
 
-        const body = await res.json();
-        if (!body.success || !body.data?.status) return null;
+        const body = await parseActionJson<ConnectionInfo>(res);
+        if (!body.success || !body.data.status) return null;
 
         return {
-            status: body.data.status as LoginStatus,
+            status: body.data.status,
             connectionStatus: body.data.connectionStatus ?? "disconnected",
         };
     } catch {

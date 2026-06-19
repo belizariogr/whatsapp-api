@@ -1,8 +1,10 @@
 import { beforeAll, describe, expect, test } from "bun:test";
+import type { ConnectionInfo } from "../../src/modules/types.ts";
 import {
-    actionFetch,
+    actionRequest,
     authHeaders,
     ensureActionGate,
+    getActionData,
     hasActionConfig,
     skipActionTest,
 } from "../helpers/action.ts";
@@ -15,15 +17,16 @@ describe("action/status", () => {
         async () => {
             if (skipActionTest()) return;
 
-            const res = await actionFetch("/status", {
+            const { status, body } = await actionRequest<ConnectionInfo>("/status", {
                 headers: authHeaders(),
             });
-            expect(res.status).toBe(200);
-            const body = await res.json();
-            expect(body.success).toBe(true);
-            expect(body.data.status).toBe("logged_in");
-            expect(body.data.connectionStatus).toBe("connected");
-            console.log("Connection status:", body.data);
+
+            expect(status).toBe(200);
+
+            const data = getActionData(body);
+            expect(data.status).toBe("logged_in");
+            expect(data.connectionStatus).toBe("connected");
+            console.log("Connection status:", data);
         },
     );
 });

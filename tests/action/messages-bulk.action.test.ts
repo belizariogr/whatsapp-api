@@ -1,12 +1,14 @@
 import { beforeAll, describe, expect, test } from "bun:test";
 import { env } from "../../src/config/env.ts";
 import {
-    actionFetch,
+    actionRequest,
     ensureActionGate,
+    getActionData,
     hasActionConfig,
     hasRecipient,
     jsonAuthHeaders,
     skipActionTest,
+    type SendBulkResponse,
 } from "../helpers/action.ts";
 
 describe("action/messages/bulk", () => {
@@ -17,7 +19,7 @@ describe("action/messages/bulk", () => {
         async () => {
             if (skipActionTest()) return;
 
-            const res = await actionFetch("/messages/bulk", {
+            const { status, body } = await actionRequest<SendBulkResponse>("/messages/bulk", {
                 method: "POST",
                 headers: jsonAuthHeaders(),
                 body: JSON.stringify({
@@ -29,9 +31,10 @@ describe("action/messages/bulk", () => {
                 }),
             });
 
-            const body = await res.json();
-            expect(res.status).toBe(200);
-            expect(body.data.results).toHaveLength(1);
+            expect(status).toBe(200);
+
+            const data = getActionData(body);
+            expect(data.results).toHaveLength(1);
         },
     );
 });

@@ -1,8 +1,10 @@
 import { beforeAll, describe, expect, test } from "bun:test";
 import { env } from "../../src/config/env.ts";
+import type { SendResult } from "../../src/modules/types.ts";
 import {
-    actionFetch,
+    actionRequest,
     ensureActionGate,
+    getActionData,
     hasActionConfig,
     hasRecipient,
     jsonAuthHeaders,
@@ -17,18 +19,19 @@ describe("action/messages/link", () => {
         async () => {
             if (skipActionTest()) return;
 
-            const res = await actionFetch("/messages/link", {
+            const { status, body } = await actionRequest<SendResult>("/messages/link", {
                 method: "POST",
                 headers: jsonAuthHeaders(),
                 body: JSON.stringify({
                     to: env.testRecipientPhone,
-                    text: "Confira: https://github.com/WhiskeySockets/Baileys",
+                    text: "Confira: https://github.com/belizariogr/whatsapp-api",
                 }),
             });
 
-            const body = await res.json();
-            expect(res.status).toBe(200);
-            expect(body.success).toBe(true);
+            expect(status).toBe(200);
+
+            const data = getActionData(body);
+            expect(data.success).toBe(true);
         },
     );
 });

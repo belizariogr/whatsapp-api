@@ -1,8 +1,10 @@
 import { beforeAll, describe, expect, test } from "bun:test";
 import { env } from "../../src/config/env.ts";
+import type { SendResult } from "../../src/modules/types.ts";
 import {
-    actionFetch,
+    actionRequest,
     ensureActionGate,
+    getActionData,
     hasActionConfig,
     hasRecipient,
     jsonAuthHeaders,
@@ -17,7 +19,7 @@ describe("action/messages/text", () => {
         async () => {
             if (skipActionTest()) return;
 
-            const res = await actionFetch("/messages/text", {
+            const { status, body } = await actionRequest<SendResult>("/messages/text", {
                 method: "POST",
                 headers: jsonAuthHeaders(),
                 body: JSON.stringify({
@@ -26,11 +28,10 @@ describe("action/messages/text", () => {
                 }),
             });
 
-            const body = await res.json();
+            expect(status).toBe(200);
 
-            expect(res.status).toBe(200);
-            expect(body.success).toBe(true);
-            expect(body.data.success).toBe(true);
+            const data = getActionData(body);
+            expect(data.success).toBe(true);
         },
     );
 });
