@@ -23,7 +23,7 @@ export class WhatsAppApiError extends Error {
 }
 
 export class WhatsAppNotLoggedInError extends WhatsAppApiError {
-  constructor(message = 'WhatsApp not logged in. Call POST /whatsapp/login first.') {
+  constructor(message = 'WhatsApp not logged in. Call POST /login first.') {
     super('NOT_LOGGED_IN', message, 401);
     this.name = 'WhatsAppNotLoggedInError';
   }

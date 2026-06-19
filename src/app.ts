@@ -2,7 +2,7 @@ import { Hono } from 'hono';
 import { cors } from 'hono/cors';
 import { logger } from 'hono/logger';
 import { isWhatsAppApiError } from './modules/whatsapp/types.ts';
-import whatsappRoutes from './routes/whatsapp/index.ts';
+import routes from './routes/index.ts';
 
 export function createApp() {
   const app = new Hono();
@@ -10,7 +10,7 @@ export function createApp() {
   app.use('*', logger());
   app.use('*', cors());
 
-  app.route('/whatsapp', whatsappRoutes);
+  app.route('/', routes);
 
   app.notFound((c) =>
     c.json({ success: false, error: { code: 'NOT_FOUND', message: 'Route not found' } }, 404),

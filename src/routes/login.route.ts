@@ -1,10 +1,10 @@
 import { Hono } from 'hono';
-import type { AuthVariables } from '../../middleware/auth.ts';
-import { jsonError, jsonSuccess } from '../../utils/response.ts';
-import { qrStringToPngBase64, qrStringToPngBuffer } from '../../utils/qrcode.ts';
-import { whatsappManager } from '../../modules/whatsapp/connection-manager.ts';
-import { isWhatsAppApiError } from '../../modules/whatsapp/types.ts';
-import { getTenantId } from '../../core/services/helpers.ts';
+import type { AuthVariables } from '../middleware/auth.ts';
+import { jsonError, jsonSuccess } from '../utils/response.ts';
+import { qrStringToPngBase64, qrStringToPngBuffer } from '../utils/qrcode.ts';
+import { whatsappManager } from '../modules/whatsapp/connection-manager.ts';
+import { isWhatsAppApiError } from '../modules/whatsapp/types.ts';
+import { getTenantId } from '../core/services/helpers.ts';
 
 const app = new Hono<{ Variables: AuthVariables }>();
 

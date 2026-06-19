@@ -1,10 +1,10 @@
 import { Hono } from 'hono';
-import type { AuthVariables } from '../../middleware/auth.ts';
-import { jsonSuccess } from '../../utils/response.ts';
-import { sendTextMessage } from '../../modules/whatsapp/message-sender.ts';
-import { isValidPhoneNumber } from '../../utils/phone.ts';
-import { isNonEmptyString } from '../../utils/strings.ts';
-import { getTenantId } from '../../core/services/helpers.ts';
+import type { AuthVariables } from '../middleware/auth.ts';
+import { jsonSuccess } from '../utils/response.ts';
+import { sendTextMessage } from '../modules/whatsapp/message-sender.ts';
+import { isValidPhoneNumber } from '../utils/phone.ts';
+import { isNonEmptyString } from '../utils/strings.ts';
+import { getTenantId } from '../core/services/helpers.ts';
 
 const app = new Hono<{ Variables: AuthVariables }>();
 

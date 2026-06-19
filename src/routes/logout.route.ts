@@ -1,8 +1,8 @@
 import { Hono } from 'hono';
-import type { AuthVariables } from '../../middleware/auth.ts';
-import { jsonSuccess } from '../../utils/response.ts';
-import { whatsappManager } from '../../modules/whatsapp/connection-manager.ts';
-import { getTenantId } from '../../core/services/helpers.ts';
+import type { AuthVariables } from '../middleware/auth.ts';
+import { jsonSuccess } from '../utils/response.ts';
+import { whatsappManager } from '../modules/whatsapp/connection-manager.ts';
+import { getTenantId } from '../core/services/helpers.ts';
 
 const app = new Hono<{ Variables: AuthVariables }>();
 

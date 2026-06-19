@@ -7,7 +7,7 @@ const hasRecipient = env.testRecipientPhone.length > 0;
 
 describe('action/whatsapp', () => {
   test.skipIf(!hasActionConfig)('GET /whatsapp/status — tenant conectado', async () => {
-    const res = await fetch(`${BASE_URL}/whatsapp/status`, {
+    const res = await fetch(`${BASE_URL}/status`, {
       headers: { Authorization: `Bearer ${env.testJwtToken}` },
     });
     expect(res.status).toBe(200);
@@ -20,7 +20,7 @@ describe('action/whatsapp', () => {
   test.skipIf(!hasActionConfig || !hasRecipient)(
     'POST /whatsapp/messages/text — envio real',
     async () => {
-      const res = await fetch(`${BASE_URL}/whatsapp/messages/text`, {
+      const res = await fetch(`${BASE_URL}/messages/text`, {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${env.testJwtToken}`,
@@ -34,7 +34,7 @@ describe('action/whatsapp', () => {
 
       const body = await res.json();
       if (body.error?.message?.includes('not connected')) {
-        console.warn('WhatsApp não logado — faça login via POST /whatsapp/login');
+        console.warn('WhatsApp não logado — faça login via POST /login');
         return;
       }
 
@@ -47,7 +47,7 @@ describe('action/whatsapp', () => {
   test.skipIf(!hasActionConfig || !hasRecipient)(
     'POST /whatsapp/messages/link — envio com link',
     async () => {
-      const res = await fetch(`${BASE_URL}/whatsapp/messages/link`, {
+      const res = await fetch(`${BASE_URL}/messages/link`, {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${env.testJwtToken}`,
@@ -69,7 +69,7 @@ describe('action/whatsapp', () => {
   test.skipIf(!hasActionConfig || !hasRecipient)(
     'POST /whatsapp/messages/buttons — botões de resposta',
     async () => {
-      const res = await fetch(`${BASE_URL}/whatsapp/messages/buttons`, {
+      const res = await fetch(`${BASE_URL}/messages/buttons`, {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${env.testJwtToken}`,
@@ -96,7 +96,7 @@ describe('action/whatsapp', () => {
   test.skipIf(!hasActionConfig || !hasRecipient)(
     'POST /whatsapp/messages/bulk — envio em massa',
     async () => {
-      const res = await fetch(`${BASE_URL}/whatsapp/messages/bulk`, {
+      const res = await fetch(`${BASE_URL}/messages/bulk`, {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${env.testJwtToken}`,

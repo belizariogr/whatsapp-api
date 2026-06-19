@@ -6,7 +6,7 @@ describe('integration/whatsapp auth', () => {
   const app = createApp();
 
   test('rejects request without token', async () => {
-    const res = await app.request('/whatsapp/status');
+    const res = await app.request('/status');
     expect(res.status).toBe(401);
     const body = await res.json();
     expect(body.success).toBe(false);
@@ -14,15 +14,15 @@ describe('integration/whatsapp auth', () => {
   });
 
   test('rejects invalid token', async () => {
-    const res = await app.request('/whatsapp/status', {
+    const res = await app.request('/status', {
       headers: { Authorization: 'Bearer invalid.token' },
     });
     expect(res.status).toBe(401);
   });
 
-  test('GET /whatsapp/status with valid token', async () => {
+  test('GET /status with valid token', async () => {
     const token = createTestToken({ id: 999 });
-    const res = await app.request('/whatsapp/status', {
+    const res = await app.request('/status', {
       headers: { Authorization: `Bearer ${token}` },
     });
 
@@ -48,7 +48,7 @@ describe('integration/whatsapp validation', () => {
   const token = createTestToken({ id: 999 });
 
   test('POST /messages/text validates payload', async () => {
-    const res = await app.request('/whatsapp/messages/text', {
+    const res = await app.request('/messages/text', {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${token}`,
@@ -60,7 +60,7 @@ describe('integration/whatsapp validation', () => {
   });
 
   test('POST /messages/bulk validates recipients', async () => {
-    const res = await app.request('/whatsapp/messages/bulk', {
+    const res = await app.request('/messages/bulk', {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${token}`,

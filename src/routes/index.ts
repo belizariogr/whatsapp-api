@@ -1,6 +1,6 @@
 import { Hono } from 'hono';
-import type { AuthVariables } from '../../middleware/auth.ts';
-import { authMiddleware } from '../../middleware/auth.ts';
+import type { AuthVariables } from '../middleware/auth.ts';
+import { authMiddleware } from '../middleware/auth.ts';
 import loginRoute from './login.route.ts';
 import logoutRoute from './logout.route.ts';
 import statusRoute from './status.route.ts';

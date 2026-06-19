@@ -2,7 +2,7 @@
   "info": {
     "_postman_id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
     "name": "WhatsApp API",
-    "description": "Multi-tenant WhatsApp API (Bun + Hono + Baileys 7).\n\n## Setup\n\n1. Import this collection into Postman.\n2. Edit the collection variables:\n   - `baseUrl` — Server URL (default: `http://localhost:6000`)\n   - `jwtToken` — Valid JWT issued by the authentication microservice\n   - `recipientPhone` — Recipient phone number (format: `5511999999999`)\n\nAll `/whatsapp/*` routes use Bearer Token automatically via the `jwtToken` variable.",
+    "description": "Multi-tenant WhatsApp API (Bun + Hono + Baileys 7).\n\n## Setup\n\n1. Import this collection into Postman.\n2. Edit the collection variables:\n   - `baseUrl` — Server URL (default: `http://localhost:6000`)\n   - `jwtToken` — Valid JWT issued by the authentication microservice\n   - `recipientPhone` — Recipient phone number (format: `5511999999999`)\n\nAll routes use Bearer Token automatically via the `jwtToken` variable.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "auth": {
@@ -34,28 +34,6 @@
   ],
   "item": [
     {
-      "name": "Health",
-      "item": [
-        {
-          "name": "Health Check",
-          "request": {
-            "auth": {
-              "type": "noauth"
-            },
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/health/health",
-              "host": ["{{baseUrl}}"],
-              "path": ["health", "health"]
-            },
-            "description": "Checks API status and database connectivity."
-          },
-          "response": []
-        }
-      ]
-    },
-    {
       "name": "Connection",
       "item": [
         {
@@ -64,9 +42,9 @@
             "method": "POST",
             "header": [],
             "url": {
-              "raw": "{{baseUrl}}/whatsapp/login",
+              "raw": "{{baseUrl}}/login",
               "host": ["{{baseUrl}}"],
-              "path": ["whatsapp", "login"]
+              "path": ["login"]
             },
             "description": "Starts WhatsApp login. Default (`type=img` or omitted): returns PNG image. `?type=json`: returns `{ \"qrCode\": \"<base64>\" }`. Returns 409 if the tenant is already logged in."
           },
@@ -78,9 +56,9 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{baseUrl}}/whatsapp/status",
+              "raw": "{{baseUrl}}/status",
               "host": ["{{baseUrl}}"],
-              "path": ["whatsapp", "status"]
+              "path": ["status"]
             },
             "description": "Returns the tenant WhatsApp connection status."
           },
@@ -92,9 +70,9 @@
             "method": "POST",
             "header": [],
             "url": {
-              "raw": "{{baseUrl}}/whatsapp/logout",
+              "raw": "{{baseUrl}}/logout",
               "host": ["{{baseUrl}}"],
-              "path": ["whatsapp", "logout"]
+              "path": ["logout"]
             },
             "description": "Full logout — removes credentials from the database."
           },
@@ -125,9 +103,9 @@
               }
             },
             "url": {
-              "raw": "{{baseUrl}}/whatsapp/messages/text",
+              "raw": "{{baseUrl}}/messages/text",
               "host": ["{{baseUrl}}"],
-              "path": ["whatsapp", "messages", "text"]
+              "path": ["messages", "text"]
             },
             "description": "Sends a plain text message."
           },
@@ -153,9 +131,9 @@
               }
             },
             "url": {
-              "raw": "{{baseUrl}}/whatsapp/messages/link",
+              "raw": "{{baseUrl}}/messages/link",
               "host": ["{{baseUrl}}"],
-              "path": ["whatsapp", "messages", "link"]
+              "path": ["messages", "link"]
             },
             "description": "Sends text with a link (automatic preview)."
           },
@@ -181,9 +159,9 @@
               }
             },
             "url": {
-              "raw": "{{baseUrl}}/whatsapp/messages/image",
+              "raw": "{{baseUrl}}/messages/image",
               "host": ["{{baseUrl}}"],
-              "path": ["whatsapp", "messages", "image"]
+              "path": ["messages", "image"]
             },
             "description": "Sends an image via public URL."
           },
@@ -209,9 +187,9 @@
               }
             },
             "url": {
-              "raw": "{{baseUrl}}/whatsapp/messages/image",
+              "raw": "{{baseUrl}}/messages/image",
               "host": ["{{baseUrl}}"],
-              "path": ["whatsapp", "messages", "image"]
+              "path": ["messages", "image"]
             },
             "description": "Sends an image via base64 (no data URI prefix)."
           },
@@ -237,9 +215,9 @@
               }
             },
             "url": {
-              "raw": "{{baseUrl}}/whatsapp/messages/buttons",
+              "raw": "{{baseUrl}}/messages/buttons",
               "host": ["{{baseUrl}}"],
-              "path": ["whatsapp", "messages", "buttons"]
+              "path": ["messages", "buttons"]
             },
             "description": "Sends a message with quick reply buttons."
           },
@@ -265,9 +243,9 @@
               }
             },
             "url": {
-              "raw": "{{baseUrl}}/whatsapp/messages/link-button",
+              "raw": "{{baseUrl}}/messages/link-button",
               "host": ["{{baseUrl}}"],
-              "path": ["whatsapp", "messages", "link-button"]
+              "path": ["messages", "link-button"]
             },
             "description": "Sends a message with an external link button."
           },
@@ -293,9 +271,9 @@
               }
             },
             "url": {
-              "raw": "{{baseUrl}}/whatsapp/messages/bulk",
+              "raw": "{{baseUrl}}/messages/bulk",
               "host": ["{{baseUrl}}"],
-              "path": ["whatsapp", "messages", "bulk"]
+              "path": ["messages", "bulk"]
             },
             "description": "Bulk send — type `text`."
           },
@@ -321,9 +299,9 @@
               }
             },
             "url": {
-              "raw": "{{baseUrl}}/whatsapp/messages/bulk",
+              "raw": "{{baseUrl}}/messages/bulk",
               "host": ["{{baseUrl}}"],
-              "path": ["whatsapp", "messages", "bulk"]
+              "path": ["messages", "bulk"]
             },
             "description": "Bulk send — type `image`. Supported types: `text`, `link`, `image`, `buttons`, `link_button`."
           },
@@ -335,9 +313,9 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{baseUrl}}/whatsapp/messages/last-received",
+              "raw": "{{baseUrl}}/messages/last-received",
               "host": ["{{baseUrl}}"],
-              "path": ["whatsapp", "messages", "last-received"]
+              "path": ["messages", "last-received"]
             },
             "description": "Returns the last received message (for testing)."
           },
