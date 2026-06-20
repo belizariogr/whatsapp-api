@@ -1,5 +1,6 @@
 import { beforeAll, describe, expect, test } from "bun:test";
 import { env } from "../../src/config/env.ts";
+import type { SendBulkResponse } from "../../src/modules/types.ts";
 import {
     actionRequest,
     ensureActionGate,
@@ -8,7 +9,6 @@ import {
     hasRecipient,
     jsonAuthHeaders,
     skipActionTest,
-    type SendBulkResponse,
 } from "../helpers/action.ts";
 
 describe("action/messages/bulk", () => {

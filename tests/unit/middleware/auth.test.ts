@@ -1,10 +1,10 @@
 import { describe, expect, test } from 'bun:test';
 import { Hono } from 'hono';
-import { authMiddleware } from '../../../src/middleware/auth.ts';
+import { authMiddleware, type AuthVariables } from '../../../src/middleware/auth.ts';
 import { createTestToken } from '../../helpers/jwt.ts';
 
 describe('middleware/auth', () => {
-    const app = new Hono();
+    const app = new Hono<{ Variables: AuthVariables }>();
     app.use('*', authMiddleware);
     app.get('/protected', (c) => c.json({ tenantId: c.get('tenantId') }));
 
@@ -14,7 +14,7 @@ describe('middleware/auth', () => {
             headers: { Authorization: `Bearer ${token}` },
         });
         expect(res.status).toBe(200);
-        const body = await res.json();
+        const body = (await res.json()) as { tenantId: number };
         expect(body.tenantId).toBe(123);
     });
 

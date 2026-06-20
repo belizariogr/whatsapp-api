@@ -1,6 +1,8 @@
 import { describe, expect, test } from 'bun:test';
 import { createApp } from '../../src/app.ts';
-import { createTestToken } from '../helpers/jwt';
+import type { ConnectionInfo } from '../../src/modules/types.ts';
+import type { ApiError, ApiSuccess } from '../../src/utils/response.ts';
+import { createTestToken } from '../helpers/jwt.ts';
 
 describe('integration/whatsapp auth', () => {
     const app = createApp();
@@ -8,7 +10,7 @@ describe('integration/whatsapp auth', () => {
     test('rejects request without token', async () => {
         const res = await app.request('/status');
         expect(res.status).toBe(401);
-        const body = await res.json();
+        const body = (await res.json()) as ApiError;
         expect(body.success).toBe(false);
         expect(body.error.code).toBe('UNAUTHORIZED');
     });
@@ -28,13 +30,13 @@ describe('integration/whatsapp auth', () => {
 
         if (res.status === 500) {
             // DB unavailable in CI/local without MariaDB
-            const body = await res.json();
+            const body = (await res.json()) as ApiError;
             expect(body.success).toBe(false);
             return;
         }
 
         expect(res.status).toBe(200);
-        const body = await res.json();
+        const body = (await res.json()) as ApiSuccess<ConnectionInfo>;
         expect(body.success).toBe(true);
         expect(body.data).toHaveProperty('status');
         expect(body.data).toHaveProperty('connectionStatus');

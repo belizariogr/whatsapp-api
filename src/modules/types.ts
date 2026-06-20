@@ -103,6 +103,10 @@ export interface SendResult {
     error?: string;
 }
 
+export interface SendBulkResponse {
+    results: SendResult[];
+}
+
 export interface ReceivedMessageInfo {
     remoteJid: string;
     messageId: string;

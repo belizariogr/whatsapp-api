@@ -1,5 +1,5 @@
 import { env } from "../../src/config/env.ts";
-import type { ConnectionInfo, SendResult } from "../../src/modules/types.ts";
+import type { ConnectionInfo, SendBulkResponse, SendResult } from "../../src/modules/types.ts";
 import type { ApiError, ApiSuccess } from "../../src/utils/response.ts";
 
 const apiHost = process.env.API_HOST ?? "127.0.0.1";
@@ -14,9 +14,7 @@ export interface ActionRequestResult<T> {
     body: ActionApiResponse<T>;
 }
 
-export interface SendBulkResponse {
-    results: SendResult[];
-}
+export type { SendBulkResponse, SendResult };
 
 export interface ActionGate {
     ready: boolean;

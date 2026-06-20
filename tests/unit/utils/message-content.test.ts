@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test';
 import type { WAMessage } from '@whiskeysockets/baileys';
-import { parseReceivedMessage } from '../../../src/utils/message-content.ts';
+import { parseReceivedMessage, type ParsedReceivedMessage } from '../../../src/utils/message-content.ts';
 import { testJid } from '../../helpers/phone.ts';
 
 describe('utils/message-content', () => {
@@ -10,7 +10,8 @@ describe('utils/message-content', () => {
             message: { conversation: 'Olá' },
         } as WAMessage;
 
-        expect(parseReceivedMessage(msg)).toEqual({
+        const parsed: ParsedReceivedMessage | null = parseReceivedMessage(msg);
+        expect(parsed).toEqual({
             messageType: 'conversation',
             content: 'Olá',
         });
