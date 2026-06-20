@@ -15,6 +15,9 @@ app.post('/messages/bulk', async (c) => {
             text?: string;
             imageUrl?: string;
             imageBase64?: string;
+            pdfUrl?: string;
+            pdfBase64?: string;
+            fileName?: string;
             caption?: string;
             footer?: string;
             buttonText?: string;
@@ -40,10 +43,13 @@ app.post('/messages/bulk', async (c) => {
     const results = await sendBulkMessage(getTenantId(c), {
         recipients: body.recipients,
         message: {
-            type: body.message.type as 'text' | 'link' | 'image' | 'link_button',
+            type: body.message.type as 'text' | 'link' | 'image' | 'link_button' | 'pdf',
             text: body.message.text,
             imageUrl: body.message.imageUrl,
             imageBase64: body.message.imageBase64,
+            pdfUrl: body.message.pdfUrl,
+            pdfBase64: body.message.pdfBase64,
+            fileName: body.message.fileName,
             caption: body.message.caption,
             footer: body.message.footer,
             buttonText: body.message.buttonText,

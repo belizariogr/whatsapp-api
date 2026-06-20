@@ -73,6 +73,14 @@ export interface SendImagePayload {
     caption?: string;
 }
 
+export interface SendPdfPayload {
+    to: string;
+    pdfUrl?: string;
+    pdfBase64?: string;
+    fileName?: string;
+    caption?: string;
+}
+
 export interface SendLinkButtonPayload {
     to: string;
     text: string;
@@ -84,10 +92,13 @@ export interface SendLinkButtonPayload {
 export interface SendBulkPayload {
     recipients: string[];
     message: {
-        type: 'text' | 'link' | 'image' | 'link_button';
+        type: 'text' | 'link' | 'image' | 'link_button' | 'pdf';
         text?: string;
         imageUrl?: string;
         imageBase64?: string;
+        pdfUrl?: string;
+        pdfBase64?: string;
+        fileName?: string;
         caption?: string;
         footer?: string;
         buttonText?: string;

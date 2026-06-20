@@ -10,6 +10,7 @@ import type {
     SendImagePayload,
     SendLinkButtonPayload,
     SendLinkPayload,
+    SendPdfPayload,
     SendResult,
     SendTextPayload,
 } from './types.ts';
@@ -82,6 +83,43 @@ export async function sendImageMessage(
     };
 }
 
+export async function sendPdfMessage(
+    tenantId: number,
+    payload: SendPdfPayload,
+): Promise<SendResult> {
+    const socket = await ensureConnected(tenantId);
+    const jid = toWhatsAppJid(payload.to);
+    const fileName = payload.fileName?.trim() || 'document.pdf';
+
+    let documentContent: AnyMessageContent;
+    if (payload.pdfUrl) {
+        documentContent = {
+            document: { url: payload.pdfUrl },
+            mimetype: 'application/pdf',
+            fileName,
+            caption: payload.caption,
+        };
+    } else if (payload.pdfBase64) {
+        const buffer = Buffer.from(payload.pdfBase64, 'base64');
+        documentContent = {
+            document: buffer,
+            mimetype: 'application/pdf',
+            fileName,
+            caption: payload.caption,
+        };
+    } else {
+        throw new Error('Either pdfUrl or pdfBase64 is required');
+    }
+
+    const result = await socket.sendMessage(jid, documentContent);
+    return {
+        to: payload.to,
+        jid,
+        messageId: result?.key.id ?? undefined,
+        success: true,
+    };
+}
+
 export async function sendLinkButtonMessage(
     tenantId: number,
     payload: SendLinkButtonPayload,
@@ -144,6 +182,15 @@ export async function sendBulkMessage(
                         footer: payload.message.footer,
                         buttonText: payload.message.buttonText ?? 'Abrir link',
                         url: payload.message.url ?? '',
+                    });
+                    break;
+                case 'pdf':
+                    result = await sendPdfMessage(tenantId, {
+                        to: recipient,
+                        pdfUrl: payload.message.pdfUrl,
+                        pdfBase64: payload.message.pdfBase64,
+                        fileName: payload.message.fileName,
+                        caption: payload.message.caption,
                     });
                     break;
                 default:

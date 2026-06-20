@@ -34,10 +34,14 @@ const {
     sendLinkButtonMessage,
     sendBulkMessage,
     sendImageMessage,
+    sendPdfMessage,
 } = await import('../../../src/modules/message-sender.ts');
 
 const TEST_IMAGE_BASE64 =
     'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==';
+
+const TEST_PDF_BASE64 =
+    'JVBERi0xLjAKMSAwIG9iago8PAovVHlwZSAvQ2F0YWxvZwovUGFnZXMgMiAwIFIKPj4KZW5kb2JqCjIgMCBvYmoKPDwKL1R5cGUgL1BhZ2VzCi9LaWRzIFszIDAgUl0KL0NvdW50IDEKPj4KZW5kb2JqCjMgMCBvYmoKPDwKL1R5cGUgL1BhZ2UKL01lZGlhQm94IFswIDAgMyAzXQo+PgplbmRvYmoKeHJlZgowIDQKMDAwMDAwMDAwMCA2NTUzNSBmIAowMDAwMDAwMDA5IDAwMDAwIG4gCjAwMDAwMDAwNTIgMDAwMDAgbiAKMDAwMDAwMDEwMSAwMDAwMCBuIAp0cmFpbGVyCjw8Ci9TaXplIDQKL1Jvb3QgMSAwIFIKPj4Kc3RhcnR4cmVmCjE0OQolJUVPRgo=';
 
 function expectSendResult(result: SendResult, expectedMessageId = 'msg-123'): void {
     expect(result.to).toBe(testPhone);
@@ -145,6 +149,20 @@ describe('modules/whatsapp/message-sender', () => {
         expectGeneratedSendResult(results[0]!);
     });
 
+    test('sendBulkMessage handles pdf type', async () => {
+        const results = await sendBulkMessage(1, {
+            recipients: [testPhone],
+            message: {
+                type: 'pdf',
+                pdfUrl: 'https://example.com/document.pdf',
+                fileName: 'invoice.pdf',
+                caption: 'Your invoice',
+            },
+        });
+        expect(results).toHaveLength(1);
+        expectSendResult(results[0]!);
+    });
+
     test('sendImageMessage with imageUrl', async () => {
         const result = await sendImageMessage(1, {
             to: testPhone,
@@ -170,6 +188,45 @@ describe('modules/whatsapp/message-sender', () => {
         const call = mockSendMessage.mock.calls[0] as [string, { image: Buffer }];
         expect(call[1]).toMatchObject({
             image: Buffer.from(TEST_IMAGE_BASE64, 'base64'),
+        });
+    });
+
+    test('sendPdfMessage with pdfUrl', async () => {
+        const result = await sendPdfMessage(1, {
+            to: testPhone,
+            pdfUrl: 'https://example.com/document.pdf',
+            fileName: 'invoice.pdf',
+            caption: 'Your invoice',
+        });
+        expectSendResult(result);
+        expect(mockSendMessage).toHaveBeenCalledTimes(1);
+        const call = mockSendMessage.mock.calls[0] as [
+            string,
+            { document: { url: string }; mimetype: string; fileName: string; caption: string },
+        ];
+        expect(call[1]).toMatchObject({
+            document: { url: 'https://example.com/document.pdf' },
+            mimetype: 'application/pdf',
+            fileName: 'invoice.pdf',
+            caption: 'Your invoice',
+        });
+    });
+
+    test('sendPdfMessage with pdfBase64 defaults fileName', async () => {
+        const result = await sendPdfMessage(1, {
+            to: testPhone,
+            pdfBase64: TEST_PDF_BASE64,
+        });
+        expectSendResult(result);
+        expect(mockSendMessage).toHaveBeenCalledTimes(1);
+        const call = mockSendMessage.mock.calls[0] as [
+            string,
+            { document: Buffer; mimetype: string; fileName: string },
+        ];
+        expect(call[1]).toMatchObject({
+            document: Buffer.from(TEST_PDF_BASE64, 'base64'),
+            mimetype: 'application/pdf',
+            fileName: 'document.pdf',
         });
     });
 });
