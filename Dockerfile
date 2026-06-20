@@ -4,4 +4,4 @@ WORKDIR /usr/app
 
 EXPOSE 6000
 
-CMD ["bun", "run", "start"]
+CMD ["bun", "start"]

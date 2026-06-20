@@ -2,7 +2,7 @@ services:
     bg:
         container_name: whatsapp-api
         image: whatsapp-api
-        command: bun run start
+        command: bun start
         restart: always
         volumes:
             - .:/usr/app

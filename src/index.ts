@@ -6,27 +6,32 @@ import { runMigrations } from './db/migrations/runner.ts';
 
 const app = createApp();
 
-async function bootstrap() {
-    try {
-        await verifyDbConnection();
-        await runMigrations();
-        console.log('Migrations applied successfully.');
-    } catch (error) {
-        console.error('Database connection failed:', error);
-        await closeDb();
-        process.exit(1);
-    }
+try {
+    await verifyDbConnection();
+    await runMigrations();
+    console.log('Migrations applied successfully.');
+} catch (error) {
+    console.error('Database connection failed:', error);
+    await closeDb();
+    process.exit(1);
+}
 
+try {
     Bun.serve({
         port: env.port,
         fetch: app.fetch,
     });
-
-    console.log(`WhatsApp API running on port ${env.port}...`);
-}
-
-bootstrap().catch(async (error) => {
-    console.error('Failed to start application:', error);
+} catch (error) {
+    const code = error instanceof Error && 'code' in error ? String(error.code) : '';
+    if (code === 'EADDRINUSE') {
+        console.error(
+            `Port ${env.port} is already in use. Stop the other process (e.g. a previous "bun run dev") or set PORT to another value.`,
+        );
+    } else {
+        console.error('Failed to start HTTP server:', error);
+    }
     await closeDb();
     process.exit(1);
-});
+}
+
+console.log(`WhatsApp API running on port ${env.port}...`);
