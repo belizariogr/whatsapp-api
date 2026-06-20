@@ -28,4 +28,15 @@ describe('routes/register', () => {
         const body = (await res.json()) as ApiError;
         expect(body.error.code).toBe('VALIDATION_ERROR');
     });
+
+    test('rejects invalid id', async () => {
+        const res = await app.request('/register', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id: 0 }),
+        });
+        expect(res.status).toBe(400);
+        const body = (await res.json()) as ApiError;
+        expect(body.error.code).toBe('VALIDATION_ERROR');
+    });
 });

@@ -75,7 +75,7 @@
                         ],
                         "body": {
                             "mode": "raw",
-                            "raw": "{\n  \"name\": \"My tenant\"\n}",
+                            "raw": "{\n  \"id\": 100,\n  \"name\": \"My tenant\"\n}",
                             "options": {
                                 "raw": {
                                     "language": "json"
@@ -87,7 +87,7 @@
                             "host": ["{{baseUrl}}"],
                             "path": ["register"]
                         },
-                        "description": "Creates a tenant and returns a JWT without expiration. Saves `jwtToken` and `tenantId` collection variables on success. Body `name` is optional."
+                        "description": "Creates a tenant and returns a JWT without expiration. Saves `jwtToken` and `tenantId` collection variables on success. Optional body: `id` (positive integer; if omitted, uses MAX(id) + 1) and `name`."
                     },
                     "response": []
                 },

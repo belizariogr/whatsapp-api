@@ -5,18 +5,40 @@ export interface TenantRecord {
     name: string | null;
 }
 
-export async function createTenant(name?: string | null): Promise<TenantRecord> {
-    const db = getDb();
-    await db`
-        INSERT INTO tenants (name)
-        VALUES (${name ?? null})
-    `;
-    const rows = await db`SELECT LAST_INSERT_ID() AS id`;
-    const id = Number(rows[0]?.id);
-    if (!id) {
-        throw new Error('Failed to create tenant');
+export class TenantAlreadyExistsError extends Error {
+    constructor(tenantId: number) {
+        super(`Tenant ${tenantId} already exists`);
+        this.name = 'TenantAlreadyExistsError';
     }
-    return { id, name: name ?? null };
+}
+
+async function getNextTenantId(): Promise<number> {
+    const db = getDb();
+    const rows = await db`SELECT COALESCE(MAX(id), 0) + 1 AS next_id FROM tenants`;
+    return Number(rows[0]?.next_id);
+}
+
+export async function createTenant(options?: {
+    id?: number;
+    name?: string | null;
+}): Promise<TenantRecord> {
+    const db = getDb();
+    const name = options?.name ?? null;
+    const id = options?.id ?? (await getNextTenantId());
+
+    if (options?.id !== undefined) {
+        const existing = await getTenant(id);
+        if (existing) {
+            throw new TenantAlreadyExistsError(id);
+        }
+    }
+
+    await db`
+        INSERT INTO tenants (id, name)
+        VALUES (${id}, ${name})
+    `;
+
+    return { id, name };
 }
 
 export async function getTenant(tenantId: number): Promise<TenantRecord | null> {
