@@ -7,6 +7,7 @@ BASE_DIR=$PWD
 cd $BASE_DIR
 
 
+IMAGE_NAME="whatsapp-api"
 BACKEND_HOST="bg-api-us"
 BACKEND_PATH="whatsapp"
 DIFF_SRC_PATH=$BASE_DIR/
