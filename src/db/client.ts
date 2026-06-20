@@ -26,10 +26,14 @@ export async function closeDb(): Promise<void> {
     }
 }
 
+export async function verifyDbConnection(): Promise<void> {
+    const db = getDb();
+    await db`SELECT 1`;
+}
+
 export async function pingDb(): Promise<boolean> {
     try {
-        const db = getDb();
-        await db`SELECT 1`;
+        await verifyDbConnection();
         return true;
     } catch {
         return false;
